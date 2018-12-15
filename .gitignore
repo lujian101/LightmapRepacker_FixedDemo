@@ -1,0 +1,5 @@
+*.suo
+.vs
+*.csproj
+Temp
+Library

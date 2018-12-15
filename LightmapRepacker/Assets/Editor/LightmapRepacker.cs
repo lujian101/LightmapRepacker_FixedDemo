@@ -1,4 +1,8 @@
-﻿#define LIGHTMAPREPACKER_PRECISION_HIGH
+﻿// 消除LightmapUV取整后的误差
+#define FIXING_LIGHTMAP_UVERROR
+// 消除单精度浮点带来的微小误差
+#define LIGHTMAPREPACKER_PRECISION_HIGH
+// 消除接缝黑边
 #define FIXING_LIGHTMAP_UVBORDER
 using AresEditor;
 using Common;
@@ -338,11 +342,20 @@ static class LightmapRepacker {
 
     class RendererInfo {
         public Renderer renderer;
-        public Bounds bounds; // 渲染器包围盒
+        /// <summary>
+        /// 渲染器包围盒
+        /// </summary>
+        public Bounds bounds;
         public Mesh mesh;
         public Material[] materials;
-        public float bounds_radius = 0f; // 渲染器包球半径
-        public int lightmapIndex = -1; // Renderer上使用的Lightmap纹理索引
+        /// <summary>
+        /// 渲染器包球半径
+        /// </summary>
+        public float bounds_radius = 0f;
+        /// <summary>
+        /// Renderer上使用的Lightmap纹理索引
+        /// </summary>
+        public int lightmapIndex = -1;
         public Vector4 lightmapScaleOffset = new Vector4( 1f, 1f, 0f, 0f );
         public Bounds GetBounds() {
             return this.bounds;
@@ -376,7 +389,13 @@ static class LightmapRepacker {
 
     class LightmapRect {
         public Renderer renderer;
+        /// <summary>
+        /// 原始Mesh上用于lightmap那一套纹理坐标的包围盒
+        /// </summary>
         public Vector4d meshUVBounds;
+        /// <summary>
+        /// 经过lightmapScaleOffset变换后的纹理坐标包围盒
+        /// </summary>
         public Vector4d lightmapUVBounds;
         /// <summary>
         /// 像素包围盒，取整
@@ -398,8 +417,17 @@ static class LightmapRepacker {
     class LightmapInfo {
         public int width = 0;
         public int height = 0;
+        /// <summary>
+        /// 像素，以HDR格式存储
+        /// </summary>
         public Vector4[] pixels = null;
         public String assetPath = String.Empty;
+        /// <summary>
+        /// 获取像素值，模拟一下Lightmap的Clamp采样方式
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
         public Vector4 GetPixelClamped( int x, int y ) {
             x = Mathf.Clamp( x, 0, width - 1 );
             y = Mathf.Clamp( y, 0, height - 1 );
@@ -632,7 +660,12 @@ static class LightmapRepacker {
         return path;
     }
 
-    // 获取Mesh上的第UV2，如果没有，就回退返回第一套
+    /// <summary>
+    /// 获取Mesh上的第UV2，如果没有，就回退返回第一套
+    /// </summary>
+    /// <param name="mesh"></param>
+    /// <param name="channel"></param>
+    /// <returns></returns>
     static Vector2[] GetMeshUV2( Mesh mesh, int channel = 1 ) {
         Vector2[] ret = null;
         var assetPath = AssetDatabase.GetAssetPath( mesh );
@@ -682,7 +715,11 @@ static class LightmapRepacker {
         return result;
     }
 
-    // 获取Mesh上的UV2的包围盒，以及经过ScaleOffset变换后的包围盒，也就是在Lightmap纹理坐标系下的包围盒
+    /// <summary>
+    /// // 获取Mesh上的UV2的包围盒，以及经过ScaleOffset变换后的包围盒，也就是在Lightmap纹理坐标系下的包围盒
+    /// </summary>
+    /// <param name="r"></param>
+    /// <returns></returns>
     static MeshLightmapUVInfo GetMeshUV2Bounds( Renderer r ) {
         var ret = new MeshLightmapUVInfo();
         if ( r != null && r.lightmapIndex >= 0 ) {
@@ -768,7 +805,10 @@ static class LightmapRepacker {
         return ret;
     }
 
-    // 把当前场景的lightmap像素以HDR格式读取出来保存成未压缩的浮点格式
+    /// <summary>
+    /// 把当前场景的lightmap像素以HDR格式读取出来保存成未压缩的浮点格式
+    /// </summary>
+    /// <returns></returns>
     unsafe static List<LightmapInfo> LoadAllLightmapData() {
         var litmapData = new List<LightmapInfo>();
         var lightmaps = LightmapSettings.lightmaps;
@@ -778,7 +818,7 @@ static class LightmapRepacker {
             var err = IntPtr.Zero;
             var width = 0;
             var height = 0;
-            var assetPath = AssetDatabase.GetAssetPath( lightmaps[ j ].lightmapLight );
+            var assetPath = AssetDatabase.GetAssetPath( lightmaps[ j ].lightmapColor );
             var ld = new LightmapInfo();
             ld.assetPath = assetPath;
             try {
@@ -807,6 +847,12 @@ static class LightmapRepacker {
         return count == lightmaps.Length ? litmapData : null;
     }
 
+    /// <summary>
+    /// 为Renderer计算新的lightmapScaleOffset
+    /// </summary>
+    /// <param name="meshUVBounds">模型资源的原始UV包围盒</param>
+    /// <param name="uvBounds">定向到Lightmap上的一块用于指定Renderer的Lightmap纹理区间</param>
+    /// <returns></returns>
     static Vector4d CalculateUVScaleOffset( Vector4d meshUVBounds, Vector4d uvBounds ) {
         var scaleOffset = new Vector4d();
         scaleOffset.x = ( uvBounds.z - uvBounds.x ) / ( meshUVBounds.z - meshUVBounds.x );
@@ -906,7 +952,7 @@ static class LightmapRepacker {
                         var rt = default( NativeAPI.stbrp_rect );
                         rt.w = ( ushort )( ( pixMaxX - pixMinX ) + Padding );
                         rt.h = ( ushort )( ( pixMaxY - pixMinY ) + Padding );
-
+                        
                         var lightmapRect = new LightmapRect();
                         lightmapRect.renderer = r;
                         lightmapRect.lightmapUVBounds = lightmapUVBounds;
@@ -938,11 +984,10 @@ static class LightmapRepacker {
                         var i_maxx = ( int )lightmapRect.lightmapPixelBounds.z;
                         var i_maxy = ( int )lightmapRect.lightmapPixelBounds.w;
 
-                        
 #if FIXING_LIGHTMAP_UVBORDER
                         int rtOffset = Padding / 2;
                         if ( Padding > 0 ) {
-                            // 扩大半个边框，多拷贝一些边缘像素消除黑边
+                            // 扩大边框，多拷贝一些边缘像素消除黑边
                             i_minx -= Padding / 2;
                             i_miny -= Padding / 2;
                             i_maxx += Padding - Padding / 2;
@@ -974,10 +1019,18 @@ static class LightmapRepacker {
                         }
                         
                         var uvBounds = new Vector4d();
-                        var errorX = lightmapRect.lightmapPixelFBounds.x - lightmapRect.lightmapPixelBounds.x;
-                        var errorY = lightmapRect.lightmapPixelFBounds.y - lightmapRect.lightmapPixelBounds.y;
-                        var errorZ = lightmapRect.lightmapPixelFBounds.z - lightmapRect.lightmapPixelBounds.z;
-                        var errorW = lightmapRect.lightmapPixelFBounds.w - lightmapRect.lightmapPixelBounds.w;
+
+                        Real errorX = 0;
+                        Real errorY = 0;
+                        Real errorZ = 0;
+                        Real errorW = 0;
+
+#if FIXING_LIGHTMAP_UVERROR
+                        errorX = lightmapRect.lightmapPixelFBounds.x - lightmapRect.lightmapPixelBounds.x;
+                        errorY = lightmapRect.lightmapPixelFBounds.y - lightmapRect.lightmapPixelBounds.y;
+                        errorZ = lightmapRect.lightmapPixelFBounds.z - lightmapRect.lightmapPixelBounds.z;
+                        errorW = lightmapRect.lightmapPixelFBounds.w - lightmapRect.lightmapPixelBounds.w;
+#endif
                         uvBounds.x = ( ( rt.x + errorX ) / ( Real )atlasSize );
                         uvBounds.y = ( ( rt.y + errorY ) / ( Real )atlasSize );
                         // 计算在新的lightmap纹理下的纹理坐标包围盒，由于pack之前我们人为加了一个Padding，所以这里计算要减去
@@ -1035,7 +1088,7 @@ static class LightmapRepacker {
                                 var tex = AssetDatabase.LoadAssetAtPath( path, typeof( Texture2D ) ) as Texture2D;
                                 if ( tex != null ) {
                                     lightmaps[ page ] = new LightmapData();
-                                    lightmaps[ page ].lightmapLight = tex;
+                                    lightmaps[ page ].lightmapColor = tex;
                                 }
                             }
                         }

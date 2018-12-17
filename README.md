@@ -1,6 +1,6 @@
-# LightmapRepacker_FixedDemo
+# LightmapRepacker Demo
 
-An fixed demo of splitting & packing of a lightmap. (Unity 2018)
+A demo of splitting & packing of a lightmap. (Unity 2018)
 
 ## Demo演示步骤
 

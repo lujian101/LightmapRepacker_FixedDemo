@@ -34,7 +34,7 @@ A demo of splitting & packing of a lightmap. (Unity 2018)
 
     ```CSharp
     // 使用了非常出色的stb万能库之一：stb_rect来制作Atlas
-    // 当然也可用Unity的Texture2D.PackTextures方法，但是要注意防缩问题
+    // 当然也可用Unity的Texture2D.PackTextures方法，但是要注意放缩问题
     // https://github.com/nothings/stb/blob/master/stb_rect_pack.h
     // simple 2D rectangle packer with decent quality
 
@@ -94,7 +94,7 @@ A demo of splitting & packing of a lightmap. (Unity 2018)
 
         ![original_uv](./LightmapRepacker/pictures/100.png)
 
-    3. 处理之后，场景样貌，注意lightmap出现了明显偏移防缩，而且还出现了黑边
+    3. 处理之后，场景样貌，注意lightmap出现了明显偏移放缩，而且还出现了黑边
 
         ![after](./LightmapRepacker/pictures/11.png)
 
@@ -102,11 +102,11 @@ A demo of splitting & packing of a lightmap. (Unity 2018)
 
         ![after_uv](./LightmapRepacker/pictures/111.png)
 
-    结果非常糟糕，重新映射后的lightmap不仅位置出现了明显的平移和防缩，而且还有黑边出现，这是显然无法容忍的，要想办法解决
+    结果非常糟糕，重新映射后的lightmap不仅位置出现了明显的平移和放缩，而且还有黑边出现，这是显然无法容忍的，要想办法解决
 
 ## 解决问题
 
-1. 消除平移和防缩误差
+1. 消除平移和放缩误差
 
     这个问题明显出在步骤3，为了去提取lightmap上的涵盖像素，所以从UV计算像素区域时，我们执行了一系列的取整操作，这就丢失了最重要的精度，所以我们要把这部分取整丢失的精度重新补偿回来。
 
@@ -135,7 +135,7 @@ A demo of splitting & packing of a lightmap. (Unity 2018)
 
     3. 结果
 
-        处理后，基本上消除了lightmap的偏移和防缩误差，但是黑边依然存在
+        处理后，基本上消除了lightmap的偏移和放缩误差，但是黑边依然存在
         ![after_fix_scaleOffset](./LightmapRepacker/pictures/after_fix_scaleOffset.png)
 
         处理后，像素区域已经非常接近初始值了（除了x坐标有非常非常小的误差）

@@ -619,7 +619,7 @@ static class LightmapRepacker {
         var renderersInfo = CollectAllLightmapedRenderers( roots[ 0 ], out bounds_ );
         for ( int i = 1; i < roots.Length; ++i ) {
             Bounds _bounds;
-            var _renderersInfo = CollectAllMeshRenderers( roots[ i ], out _bounds );
+            var _renderersInfo = CollectAllLightmapedRenderers( roots[ i ], out _bounds );
             foreach ( var item in _renderersInfo ) {
                 var r = item.Key;
                 if ( !renderersInfo.ContainsKey( item.Key ) ) {
